@@ -28,6 +28,7 @@ from pygraph.readwrite.dot import write
 
 allSchools = {}
 allIDs = {}
+allScores = {}
 
 powerFive = ['Boston College',
              'Clemson',
@@ -183,8 +184,47 @@ def get_schools():
         allSchools[school] = [schID,'FCS']
         allIDs[schID] = school
 
-def generate_graph(school, division):
+def save_graph(graph, school, division): 
+    if not os.path.exists('logos/'):
+        os.mkdir('logos/')
+
+    for node in graph.nodes():
+        if not os.path.isfile('logos/' + node + '.png'):
+            imgData = urllib2.urlopen(allSchools[node][4]).read()
+            f = open('logos/' + node + '.png', 'wb')
+            f.write(imgData)
+            f.close()
+        graph.node_attr[node] = [('shape','none'),('label',' '),('height',1.5),('width',1.5),('fixedsize','true'),('image','logos/' + node + '.png'),('imagescale','true')]
+        
+    dot = write(graph)
+
+##    if not os.path.exists('dots/'):
+##        os.mkdir('dots/')
+##        
+##    f = open('dots/' + school + ' dot.txt', 'w')
+##    f.write(dot)
+##    f.close()
+
+    if school.lower() == 'all':
+        folder = ''
+        school = 'All'
+    elif division == 'FCS':
+        folder = 'FCS ' + division.upper() + '/'
+    elif school in powerFive:
+        folder = 'P5 ' + division.upper() + '/'
+    else:
+        folder = 'G5 ' + division.upper() + '/'
+
+    if not os.path.exists('charts/' + folder):
+        os.mkdir('charts/' + folder)
+    
+    gvv = gv.AGraph(dot)
+    gvv.layout(prog='dot')
+    gvv.draw('charts/' + folder + school + ' ' + division.upper() + '.png')
+
+def generate_graph(school, division, save):
     global allSchools
+    global allScores
 
     if not os.path.exists('charts/'):
         os.mkdir('charts/')
@@ -218,60 +258,34 @@ def generate_graph(school, division):
                         if not dgr.has_edge((key,oppName)):
                             dgr.add_edge((key,oppName))
 
-    if school == 'All':
+    if school == 'Division':
         graph = dgr
     else:
-        span = shortest_path(dgr, school)[0]
+        span, dist = shortest_path(dgr, school)
+        
+        score = 0
+        for d,a in dist.items():
+            score = score + a
+        score = float(score) / len(dist.items())
+
+        allScores[school] = score
+        
         gst = digraph()
         gst.add_spanning_tree(span)
         graph = gst
 
-    if not os.path.exists('logos/'):
-        os.mkdir('logos/')
-
-    for node in graph.nodes():
-        if not os.path.isfile('logos/' + node + '.png'):
-            imgData = urllib2.urlopen(allSchools[node][4]).read()
-            f = open('logos/' + node + '.png', 'wb')
-            f.write(imgData)
-            f.close()
-        graph.node_attr[node] = [('shape','none'),('label',' '),('height',1.5),('width',1.5),('fixedsize','true'),('image','logos/' + node + '.png'),('imagescale','true')]
-    
     print "Schools not in graph: " + str(list(set(dgr.nodes()) - set(gst.nodes())))
 
-    dot = write(graph)
-
-##    if not os.path.exists('dots/'):
-##        os.mkdir('dots/')
-##        
-##    f = open('dots/' + school + ' dot.txt', 'w')
-##    f.write(dot)
-##    f.close()
-
-    if school.lower() == 'all':
-        folder = ''
-        school = 'All'
-    elif division == 'FCS':
-        folder = 'FCS ' + division.upper() + '/'
-    elif school in powerFive:
-        folder = 'P5 ' + division.upper() + '/'
-    else:
-        folder = 'G5 ' + division.upper() + '/'
-
-    if not os.path.exists('charts/' + folder):
-        os.mkdir('charts/' + folder)
-    
-    gvv = gv.AGraph(dot)
-    gvv.layout(prog='dot')
-    gvv.draw('charts/' + folder + school + ' ' + division.upper() + '.png')
+    save_graph(graph, school, division)
 
 def main():
     global allSchools
+    global allScores
 
     parser = argparse.ArgumentParser()
     parser.add_argument('reuse', help='specify whether to use the cached data or scrape new data', choices=['reuse', 'scrape'], type=str)
     parser.add_argument('year', choices=[2014], help='four digit year', type=int)
-    parser.add_argument('school', help='specify the school to generate the graph, in quotes. correct case required. all is allowed.', type=str)
+    parser.add_argument('school', help='specify the school to generate the graph, in quotes. correct case required. \'all\' is allowed.', type=str)
     parser.add_argument('division', help='specify the division for the graph', choices=['All', 'FBS', 'P5', 'G5', 'FCS'], type=str)
     args = parser.parse_args()
         
@@ -310,8 +324,33 @@ def main():
             if allSchools[school][1] == 'FCS':
                 print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
+    elif args.school.lower() == 'fbs' and args.division in ['FBS','P5','G5']:
+        for school in allSchools:
+            if allSchools[school][1] == 'FBS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
+    elif args.school.lower() == 'p5' and args.division in ['FBS','P5','G5']:
+        for school in allSchools:
+            if school in powerFive:
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
+    elif args.school.lower() == 'g5' and args.division in ['FBS','P5','G5']:
+        for school in allSchools:
+            if school not in powerFive and allSchools[school][1] == 'FBS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
+    elif args.school.lower() == 'fcs' and args.division == 'FCS':
+        for school in allSchools:
+            if allSchools[school][1] == 'FCS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
     else:
         generate_graph(args.school, args.division)
+
+##    allScores = allScores.items()
+##    allScores.sort(key=lambda x: float(x[1]))
+##    for n,s in allScores:
+##        print n + ': ' + str(s)
 
 if __name__ == '__main__':
     import time

@@ -196,6 +196,7 @@ def generate_graph(school, division):
         if ((division == 'P5' and key in powerFive) or
             (division == 'FBS' and value[1] == 'FBS') or
             (division == 'G5' and key not in powerFive and value[1] == 'FBS') or
+            (division == 'FCS' and value[1] == 'FCS') or
             (key == school)):
             dgr.add_node(key)
 
@@ -203,14 +204,16 @@ def generate_graph(school, division):
         if ((division == 'P5' and key in powerFive) or
             (division == 'FBS' and value[1] == 'FBS') or
             (division == 'G5' and key not in powerFive and value[1] == 'FBS') or
+            (division == 'FCS' and value[1] == 'FCS') or
             (key == school)):
             for team in value[6:]:
                 oppName = team[0]
                 if len(team) > 1:
-                    if (team[1] == 'W' and
+                    if (team[1] == 'W' and oppName in allSchools and
                         ((division == 'P5' and oppName in powerFive) or
                         (division == 'FBS' and allSchools[oppName][1] == 'FBS') or
                         (division == 'G5' and oppName not in powerFive and allSchools[oppName][1] == 'FBS') or
+                        (division == 'FCS' and allSchools[oppName][1] == 'FCS') or
                         (oppName == school))):
                         if not dgr.has_edge((key,oppName)):
                             dgr.add_edge((key,oppName))
@@ -248,6 +251,8 @@ def generate_graph(school, division):
     if school.lower() == 'all':
         folder = ''
         school = 'All'
+    elif division == 'FCS':
+        folder = 'FCS ' + division.upper() + '/'
     elif school in powerFive:
         folder = 'P5 ' + division.upper() + '/'
     else:
@@ -266,8 +271,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('reuse', help='specify whether to use the cached data or scrape new data', choices=['reuse', 'scrape'], type=str)
     parser.add_argument('year', choices=[2014], help='four digit year', type=int)
-    parser.add_argument('school', help='specify the school to generate the graph, in quotes. correct case required', type=str)
-    parser.add_argument('division', help='specify the division for the graph', choices=['All', 'FBS', 'P5', 'G5'], type=str)
+    parser.add_argument('school', help='specify the school to generate the graph, in quotes. correct case required. all is allowed.', type=str)
+    parser.add_argument('division', help='specify the division for the graph', choices=['All', 'FBS', 'P5', 'G5', 'FCS'], type=str)
     args = parser.parse_args()
         
     if args.reuse == 'reuse' and os.path.isfile('teams'+str(args.year)+'.txt'):
@@ -292,6 +297,19 @@ def main():
                 generate_graph(school, 'FBS')
                 generate_graph(school, 'P5')
                 generate_graph(school, 'G5')
+            elif allSchools[school][1] == 'FCS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, 'FCS')
+    elif args.school.lower() == 'all' and args.division in ['FBS','P5','G5']:
+        for school in allSchools:
+            if allSchools[school][1] == 'FBS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
+    elif args.school.lower() == 'all' and args.division == 'FCS':
+        for school in allSchools:
+            if allSchools[school][1] == 'FCS':
+                print 'Generating graphs for ' + school
+                generate_graph(school, args.division)
     else:
         generate_graph(args.school, args.division)
 

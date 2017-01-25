@@ -12,7 +12,7 @@ ID dictionary format: {ESPN ID: Team Name}
 Command format: python graphs.py reuse year school division
 """
 
-import urllib.request, urllib.error, urllib.parse
+import urllib2
 import re
 import datetime
 import sys
@@ -103,7 +103,7 @@ def scrape_links(school, espn_schedule):
     """Scrape ESPN's pages for data."""
     global allSchools
     
-    url = urllib.request.urlopen(espn_schedule)
+    url = urllib2.urlopen(espn_schedule)
     soup = bs(url.read(), ['fast', 'lxml'])
 
     record = soup.find('div', attrs={'id':'showschedule'})
@@ -127,7 +127,7 @@ def scrape_links(school, espn_schedule):
         os.mkdir('logos/')
 
     if not os.path.isfile('logos/' + school + '.png'):
-        imgData = urllib.request.urlopen(image).read()
+        imgData = urllib2.urlopen(image).read()
         f = open('logos/' + school + '.png', 'wb')
         f.write(imgData)
         f.close()
@@ -168,13 +168,13 @@ def get_schools():
     global allSchools
     global allIDs
     
-    url = urllib.request.urlopen('http://espn.go.com/college-football/teams')
+    url = urllib2.urlopen('http://espn.go.com/college-football/teams')
     soup = bs(url.read(), ['fast', 'lxml'])
     school_links = soup.find_all(href=re.compile("football/team/_/"))
     
     for school in school_links[0:128]:
         schID = (school['href'].split('/')[7])
-        school = str(school.string).replace('\xe9', 'e') # Thanks San Jose State, sometimes
+        school = unicode(school.string).replace(u'\xe9', 'e') # Thanks San Jose State, sometimes
         school = school.encode('ascii')
         allSchools[school] = [schID,'FBS']
         allIDs[schID] = school
@@ -190,7 +190,7 @@ def save_graph(graph, school, division):
 
     for node in graph.nodes():
         if not os.path.isfile('logos/' + node + '.png'):
-            imgData = urllib.request.urlopen(allSchools[node][4]).read()
+            imgData = urllib2.urlopen(allSchools[node][4]).read()
             f = open('logos/' + node + '.png', 'wb')
             f.write(imgData)
             f.close()
@@ -230,7 +230,7 @@ def generate_graph(school, division, save):
         os.mkdir('charts/')
 
     dgr = digraph()
-    items = list(allSchools.items())
+    items = allSchools.items()
 
     for key, value in items:
         if ((division == 'P5' and key in powerFive) or
@@ -264,9 +264,9 @@ def generate_graph(school, division, save):
         span, dist = shortest_path(dgr, school)
         
         score = 0
-        for d,a in list(dist.items()):
+        for d,a in dist.items():
             score = score + a
-        score = float(score) / len(list(dist.items()))
+        score = float(score) / len(dist.items())
 
         allScores[school] = score
         
@@ -274,7 +274,7 @@ def generate_graph(school, division, save):
         gst.add_spanning_tree(span)
         graph = gst
 
-    print("Schools not in graph: " + str(list(set(dgr.nodes()) - set(gst.nodes()))))
+    print "Schools not in graph: " + str(list(set(dgr.nodes()) - set(gst.nodes())))
 
     save_graph(graph, school, division)
 
@@ -293,12 +293,12 @@ def main():
         f = open('teams'+str(args.year)+'.txt', 'r')
         allSchools = ast.literal_eval(f.read())
     elif args.reuse == 'reuse':
-        print('There isn\'t any cached data. Please scrape first.')
+        print 'There isn\'t any cached data. Please scrape first.'
         return
     else:
         get_schools()
         for school in allSchools:
-            print('Scraping ' + school)
+            print 'Scraping ' + school
             scrape_links(school, _format_schedule_url(args.year, allSchools[school][0]))
         f = open('teams'+str(args.year)+'.txt', 'w')
         f.write(str(allSchools))
@@ -307,42 +307,42 @@ def main():
     if args.school.lower() == 'all' and args.division == 'All':
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, 'FBS')
                 generate_graph(school, 'P5')
                 generate_graph(school, 'G5')
             elif allSchools[school][1] == 'FCS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, 'FCS')
     elif args.school.lower() == 'all' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     elif args.school.lower() == 'all' and args.division == 'FCS':
         for school in allSchools:
             if allSchools[school][1] == 'FCS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     elif args.school.lower() == 'fbs' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     elif args.school.lower() == 'p5' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if school in powerFive:
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     elif args.school.lower() == 'g5' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if school not in powerFive and allSchools[school][1] == 'FBS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     elif args.school.lower() == 'fcs' and args.division == 'FCS':
         for school in allSchools:
             if allSchools[school][1] == 'FCS':
-                print('Generating graphs for ' + school)
+                print 'Generating graphs for ' + school
                 generate_graph(school, args.division)
     else:
         generate_graph(args.school, args.division)
@@ -356,4 +356,4 @@ if __name__ == '__main__':
     import time
     start = time.time()
     main()
-    print(time.time() - start, 'seconds')
+    print time.time() - start, 'seconds'

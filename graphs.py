@@ -133,15 +133,15 @@ def scrape_links(school, espn_schedule):
         f.close()
 
     ## Get opponents
-    opponents = soup.find_all("li", "team-name");
-    outcomes = soup.find_all("ul", re.compile('game-schedule'));
-    allSchools[school].append({});
+    opponents = soup.find_all("li", "team-name")
+    outcomes = soup.find_all("ul", re.compile('game-schedule'))
+    allSchools[school].append({})
     
-    i = 6;
-    j = 1;
+    i = 6
+    j = 1
     for opp in opponents:
-        tempName = re.split('[><]', opp.encode('ascii'));
-        oppID = re.split('[/]', tempName[3]);
+        tempName = re.split('[><]', opp.encode('ascii'))
+        oppID = re.split('[/]', tempName[3])
         if len(oppID) >= 8:
             oppID = oppID[7]
             if oppID in allIDs:
@@ -152,17 +152,17 @@ def scrape_links(school, espn_schedule):
         else:
             oppName = tempName[2]
             oppName = re.sub('&amp;', '&', oppName, flags=re.IGNORECASE)
-        allSchools[school].append([oppName]);
+        allSchools[school].append([oppName])
         if(j < len(outcomes)):
-            temp = re.split('[><]', outcomes[j].encode('ascii'));
+            temp = re.split('[><]', outcomes[j].encode('ascii'))
             if temp[6] == 'W' or temp[6] == 'L':
-                allSchools[school][i].append(temp[6]);
-                allSchools[school][5][oppName] = temp[6]; # May cause issues when team is played twice
-                i+=1;
-                j+=2;
+                allSchools[school][i].append(temp[6])
+                allSchools[school][5][oppName] = temp[6] # May cause issues when team is played twice
+                i+=1
+                j+=2
             elif temp[4] == 'Postponed':
-                del allSchools[school][i];
-                j+=2;
+                del allSchools[school][i]
+                j+=2
 
 def get_schools():
     global allSchools

@@ -101,3 +101,5 @@ $RECYCLE.BIN/
 *.msp
 
 *.png
+*.txt
+.vscode/

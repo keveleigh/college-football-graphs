@@ -222,6 +222,7 @@ def save_graph(graph, school, division):
     gvv.layout(prog='dot')
     gvv.draw('charts/' + folder + school + ' ' + division.upper() + '.png')
 
+# TODO: Implement save parameter
 def generate_graph(school, division, save):
     global allSchools
     global allScores
@@ -287,6 +288,7 @@ def main():
     parser.add_argument('year', choices=[2014], help='four digit year', type=int)
     parser.add_argument('school', help='specify the school to generate the graph, in quotes. correct case required. \'all\' is allowed.', type=str)
     parser.add_argument('division', help='specify the division for the graph', choices=['All', 'FBS', 'P5', 'G5', 'FCS'], type=str)
+    parser.add_argument('mode', help='what should the program do?', choices=['All', 'Graphs', 'Scores'], type=str)
     args = parser.parse_args()
         
     if args.reuse == 'reuse' and os.path.isfile('teams'+str(args.year)+'.txt'):
@@ -308,44 +310,44 @@ def main():
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, 'FBS')
-                generate_graph(school, 'P5')
-                generate_graph(school, 'G5')
+                generate_graph(school, 'FBS', args.mode)
+                generate_graph(school, 'P5', args.mode)
+                generate_graph(school, 'G5', args.mode)
             elif allSchools[school][1] == 'FCS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, 'FCS')
+                generate_graph(school, 'FCS', args.mode)
     elif args.school.lower() == 'all' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     elif args.school.lower() == 'all' and args.division == 'FCS':
         for school in allSchools:
             if allSchools[school][1] == 'FCS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     elif args.school.lower() == 'fbs' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if allSchools[school][1] == 'FBS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     elif args.school.lower() == 'p5' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if school in powerFive:
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     elif args.school.lower() == 'g5' and args.division in ['FBS','P5','G5']:
         for school in allSchools:
             if school not in powerFive and allSchools[school][1] == 'FBS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     elif args.school.lower() == 'fcs' and args.division == 'FCS':
         for school in allSchools:
             if allSchools[school][1] == 'FCS':
                 print('Generating graphs for ' + school)
-                generate_graph(school, args.division)
+                generate_graph(school, args.division, args.mode)
     else:
-        generate_graph(args.school, args.division)
+        generate_graph(args.school, args.division, args.mode)
 
 ##    allScores = allScores.items()
 ##    allScores.sort(key=lambda x: float(x[1]))
